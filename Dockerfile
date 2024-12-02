@@ -1,19 +1,19 @@
-# Use the official Node.js image
-FROM node:14
+# Use Ubuntu-based Node.js image
+FROM ubuntu:22.04
 
-# Install FFmpeg and other required packages
-RUN apt-get update && apt-get install -y \
-    ffmpeg \
-    curl \
-    htop \
-    software-properties-common \
-    && rm -rf /var/lib/apt/lists/*
+# Avoid prompts from apt
+ENV DEBIAN_FRONTEND=noninteractive
 
-# Add and install yt-dlp from PPA
+# Install Node.js, ffmpeg, htop, and yt-dlp
 RUN add-apt-repository ppa:tomtomtom/yt-dlp && \
-    apt-get update && \
-    apt-get install -y yt-dlp && \
-    rm -rf /var/lib/apt/lists/*
+    apt-get update && apt-get install -y \
+    software-properties-common \
+    curl \
+    ffmpeg \
+    htop \
+    nodejs \ 
+    yt-dlp \
+    && rm -rf /var/lib/apt/lists/*
 
 # Set the working directory
 WORKDIR /usr/src/app
