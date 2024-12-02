@@ -413,18 +413,20 @@ app.post('/api/start-stream', authenticateUser, async (req, res) => {
 
 app.post('/api/stop-stream', authenticateUser, (req, res) => {
     try {
-        if (ffmpegProcess) {
-            ffmpegProcess.kill('SIGTERM');
-            ffmpegProcess = null;
-            ffmpegStartTime = null;
-            currentRtmpPlatform = null; // Clear the RTMP platform when stream stops
-            res.json({ success: true });
-        } else {
-            res.status(400).json({ success: false, message: 'No active stream to stop' });
+        if (!ffmpegProcess) {
+            return res.status(400).json({ success: false, message: 'No stream is currently running' });
         }
+
+        ffmpegProcess.kill();
+        ffmpegProcess = null;
+        ffmpegStartTime = null;
+        currentRtmpPlatform = null;
+
+        log('Stream stopped successfully');
+        res.json({ success: true, message: 'Stream stopped successfully' });
     } catch (error) {
-        console.error('Error stopping stream:', error);
-        res.status(500).json({ success: false, error: error.message });
+        handleError(error);
+        res.status(500).json({ success: false, message: 'Error stopping stream: ' + error.message });
     }
 });
 
@@ -644,10 +646,11 @@ app.get('/api/system-stats', authenticateUser, (req, res) => {
             // Use standard memory calculation for macOS
             const totalMemory = os.totalmem();
             const freeMemory = os.freemem();
-            const usedMemory = totalMemory - freeMemory;
+            const availableMemory = freeMemory;
+            const usedMemory = totalMemory - availableMemory;
             memoryStats = {
-                total: totalMemory / 1024, // Convert to KB
-                used: usedMemory / 1024,   // Convert to KB
+                total: totalMemory,
+                used: usedMemory,
                 percentage: ((usedMemory / totalMemory) * 100).toFixed(1)
             };
         } else { // Linux and other platforms
@@ -683,10 +686,11 @@ app.get('/api/system-stats', authenticateUser, (req, res) => {
                 // Fallback to standard memory calculation
                 const totalMemory = os.totalmem();
                 const freeMemory = os.freemem();
-                const usedMemory = totalMemory - freeMemory;
+                const availableMemory = freeMemory;
+                const usedMemory = totalMemory - availableMemory;
                 memoryStats = {
-                    total: totalMemory / 1024, // Convert to KB
-                    used: usedMemory / 1024,   // Convert to KB
+                    total: totalMemory,
+                    used: usedMemory,
                     percentage: ((usedMemory / totalMemory) * 100).toFixed(1)
                 };
             }
@@ -702,14 +706,14 @@ app.get('/api/system-stats', authenticateUser, (req, res) => {
                     const statusContent = fs.readFileSync(`/proc/${pid}/status`, 'utf8');
                     const vmRssMatch = statusContent.match(/VmRSS:\s+(\d+)/);
                     if (vmRssMatch) {
-                        ffmpegMemory = parseInt(vmRssMatch[1]) / 1024; // Convert KB to MB
+                        ffmpegMemory = parseInt(vmRssMatch[1]); // Keep in KB
                     }
                 } else if (process.platform === 'darwin') {
                     const command = `ps -o rss= -p ${pid}`;
                     const output = execSync(command).toString();
-                    ffmpegMemory = parseInt(output) / 1024; // Convert KB to MB
+                    ffmpegMemory = parseInt(output); // Keep in KB
                 } else {
-                    ffmpegMemory = (process.memoryUsage().heapUsed / 1024 / 1024);
+                    ffmpegMemory = process.memoryUsage().heapUsed / 1024; // Convert bytes to KB
                 }
             } catch (error) {
                 console.error('Error getting FFmpeg memory:', error);
@@ -719,9 +723,9 @@ app.get('/api/system-stats', authenticateUser, (req, res) => {
         res.json({
             cpu: Math.min(100, Math.max(0, cpuUsage)),
             memory: memoryStats.percentage,
-            totalMemory: (memoryStats.total * 1024 / 1024 / 1024).toFixed(1), // Convert KB to GB
-            usedMemory: (memoryStats.used * 1024 / 1024 / 1024).toFixed(1),   // Convert KB to GB
-            ffmpegMemory: ffmpegMemory.toFixed(1)
+            totalMemory: (memoryStats.total / (1024 * 1024 * 1024)).toFixed(1), // Convert bytes to GB
+            usedMemory: (memoryStats.used / (1024 * 1024 * 1024)).toFixed(1),   // Convert bytes to GB
+            ffmpegMemory: (ffmpegMemory / 1024).toFixed(1) // Convert KB to MB
         });
     } catch (error) {
         handleError(error);
