@@ -25,8 +25,8 @@ RUN npm install
 COPY . .
 
 # Telegram token
-ENV TELEGRAM_BOT_TOKEN=8087032982:AAFam9h0zAKctIGq3jZoMehwvj-XPuof9mw
-ENV ADMIN_USER_ID=1490539111
+ENV TELEGRAM_BOT_TOKEN=Your_Telegram_bot_token_here
+ENV ADMIN_USER_ID=Your_Telegram_ID_here
 # Expose the port the app runs on
 EXPOSE 3000
 
