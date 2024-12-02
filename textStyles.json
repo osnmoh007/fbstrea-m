@@ -1,0 +1,12 @@
+{
+    "textColor": "#ffffff",
+    "backgroundColor": "#000000",
+    "enableBackground": false,
+    "fontSize": 70,
+    "animation": "bounce",
+    "availableAnimations": [
+        "bounce",
+        "slide-left",
+        "slide-right"
+    ]
+}

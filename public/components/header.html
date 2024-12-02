@@ -1,0 +1,134 @@
+<header class="bg-white dark:bg-gray-800 shadow-md">
+    <div class="container mx-auto px-2 sm:px-4">
+        <div class="flex justify-between items-center h-12 sm:h-16">
+            <div class="flex items-center">
+                <a href="/" class="flex items-center">
+                    <span class="text-lg sm:text-xl font-bold text-primary-600 dark:text-primary-400">FBStream Tools</span>
+                </a>
+            </div>
+            
+            <!-- Mobile menu button -->
+            <div class="flex items-center space-x-1 sm:space-x-2 lg:hidden">
+                <button 
+                    id="darkModeToggleMobile" 
+                    class="theme-icon p-1.5 sm:p-2 rounded-full w-8 sm:w-10 h-8 sm:h-10 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors duration-200"
+                >
+                    <i class="fas fa-sun text-yellow-400 dark:hidden text-sm sm:text-base"></i>
+                    <i class="fas fa-moon text-blue-500 hidden dark:block text-sm sm:text-base"></i>
+                </button>
+                <button 
+                    id="logoutButtonMobile" 
+                    class="py-1.5 sm:py-2 px-3 sm:px-4 border border-transparent rounded-md shadow-sm text-xs sm:text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200"
+                >
+                    <i class="fas fa-sign-out-alt mr-1"></i>Logout
+                </button>
+                <button 
+                    id="mobileMenuButton"
+                    class="p-1.5 sm:p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                >
+                    <i class="fas fa-bars text-lg sm:text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Desktop Navigation -->
+            <nav class="hidden lg:flex space-x-8">
+                <a href="/" class="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400">
+                    <i class="fas fa-home mr-1"></i>Home
+                </a>
+                <a href="stream.html" class="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400">
+                    <i class="fas fa-video mr-1"></i>Stream
+                </a>
+                <a href="downloader.html" class="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400">
+                    <i class="fas fa-download mr-1"></i>Download
+                </a>
+                <a href="telegram_bot.html" class="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400">
+                    <i class="fab fa-telegram mr-1"></i>Telegram Bot
+                </a>
+            </nav>
+
+            <!-- Desktop Actions -->
+            <div class="hidden lg:flex space-x-2 items-center">
+                <button 
+                    id="darkModeToggle" 
+                    class="theme-icon p-2 rounded-full w-10 h-10 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors duration-200"
+                >
+                    <i class="fas fa-sun text-yellow-400 dark:hidden"></i>
+                    <i class="fas fa-moon text-blue-500 hidden dark:block"></i>
+                </button>
+                <button 
+                    id="logoutButton" 
+                    class="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200"
+                >
+                    <i class="fas fa-sign-out-alt mr-1"></i>Logout
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Navigation Menu -->
+        <div id="mobileMenuOverlay"></div>
+        <div id="mobileMenu">
+            <div class="px-4 py-6">
+                <div class="flex justify-end mb-6">
+                    <button 
+                        id="closeMobileMenu" 
+                        class="p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    >
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                <nav class="space-y-2">
+                    <a href="/" class="flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <i class="fas fa-home mr-2"></i>Home
+                    </a>
+                    <a href="stream.html" class="flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <i class="fas fa-video mr-2"></i>Stream
+                    </a>
+                    <a href="downloader.html" class="flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <i class="fas fa-download mr-2"></i>Download
+                    </a>
+                    <a href="telegram_bot.html" class="flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <i class="fab fa-telegram mr-2"></i>Telegram Bot
+                    </a>
+                </nav>
+            </div>
+        </div>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const mobileMenuButton = document.getElementById('mobileMenuButton');
+                const closeMobileMenu = document.getElementById('closeMobileMenu');
+                const mobileMenu = document.getElementById('mobileMenu');
+                const mobileMenuOverlay = document.getElementById('mobileMenuOverlay');
+
+                function openMenu() {
+                    mobileMenu.classList.remove('-translate-x-full');
+                    mobileMenuOverlay.classList.remove('hidden');
+                    setTimeout(() => {
+                        mobileMenuOverlay.classList.add('bg-opacity-50');
+                        mobileMenuOverlay.classList.remove('bg-opacity-0');
+                    }, 10);
+                }
+
+                function closeMenu() {
+                    mobileMenu.classList.add('-translate-x-full');
+                    mobileMenuOverlay.classList.add('bg-opacity-0');
+                    mobileMenuOverlay.classList.remove('bg-opacity-50');
+                    setTimeout(() => {
+                        mobileMenuOverlay.classList.add('hidden');
+                    }, 300);
+                }
+
+                mobileMenuButton.addEventListener('click', openMenu);
+                closeMobileMenu.addEventListener('click', closeMenu);
+                mobileMenuOverlay.addEventListener('click', closeMenu);
+
+                // Close menu on ESC key
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape') {
+                        closeMenu();
+                    }
+                });
+            });
+        </script>
+    </div>
+</header>

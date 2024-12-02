@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en" class="dark:dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - FBStream Tools</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {"50":"#eff6ff","100":"#dbeafe","200":"#bfdbfe","300":"#93c5fd","400":"#60a5fa","500":"#3b82f6","600":"#2563eb","700":"#1d4ed8","800":"#1e40af","900":"#1e3a8a","950":"#172554"}
+                    }
+                },
+                fontFamily: {
+                    'body': ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'],
+                    'sans': ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji']
+                }
+            }
+        }
+
+        // Check system dark mode preference
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(-20px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        .animate-slide-in {
+            animation: slideIn 0.5s ease-out forwards;
+        }
+
+        /* Glass effect */
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .dark .glass {
+            background: rgba(17, 24, 39, 0.7);
+        }
+
+        /* Input styles */
+        .input-effect {
+            position: relative;
+            margin-bottom: 30px;
+        }
+
+        .input-effect input {
+            transition: all 0.3s ease;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .input-effect input:focus {
+            border-bottom-color: #3b82f6;
+            box-shadow: none;
+        }
+
+        .input-effect label {
+            position: absolute;
+            top: 0;
+            left: 0;
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+
+        .input-effect input:focus ~ label,
+        .input-effect input:not(:placeholder-shown) ~ label {
+            transform: translateY(-20px);
+            font-size: 0.75rem;
+            color: #3b82f6;
+        }
+
+        /* Dark mode toggle transition */
+        .peer:checked ~ div {
+            transition: all 0.3s ease-in-out;
+        }
+        .peer:checked ~ div::after {
+            transition: all 0.3s ease-in-out;
+        }
+
+        /* Cursor styles */
+        button, 
+        a, 
+        input[type="submit"],
+        .clickable {
+            cursor: pointer;
+        }
+        
+        input[type="password"] {
+            cursor: text;
+        }
+
+        /* Background pattern */
+        .pattern {
+            background-color: #f7fafc;
+            background-image: radial-gradient(#3b82f6 0.5px, transparent 0.5px), radial-gradient(#3b82f6 0.5px, #f7fafc 0.5px);
+            background-size: 20px 20px;
+            background-position: 0 0, 10px 10px;
+        }
+
+        .dark .pattern {
+            background-color: #111827;
+            background-image: radial-gradient(#1e40af 0.5px, transparent 0.5px), radial-gradient(#1e40af 0.5px, #111827 0.5px);
+        }
+
+        /* Dark mode icon styles */
+        .theme-icon {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .theme-icon:hover {
+            transform: translateY(-2px);
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .theme-icon i {
+            font-size: 1.25rem;
+            color: #64748b;
+            transition: all 0.3s ease;
+        }
+
+        .dark .theme-icon {
+            background: rgba(30, 41, 59, 0.5);
+            border-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .dark .theme-icon i {
+            color: #94a3b8;
+        }
+
+        .theme-icon:hover i {
+            color: #3b82f6;
+        }
+
+        .dark .theme-icon:hover i {
+            color: #60a5fa;
+        }
+
+        @keyframes iconSpin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .theme-icon.spinning i {
+            animation: iconSpin 0.5s ease-out;
+        }
+    </style>
+</head>
+<body class="pattern min-h-screen flex flex-col text-gray-800 dark:text-gray-200 font-body">
+    <div class="flex-grow flex items-center justify-center p-4">
+        <div class="w-full max-w-md animate-fade-in relative">
+            <!-- Dark mode toggle -->
+            <div class="absolute top-2 right-2 z-50">
+                <button 
+                    id="darkModeToggle" 
+                    class="theme-icon p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-600 transition-colors duration-200"
+                    onclick="
+                        this.classList.add('spinning');
+                        setTimeout(() => this.classList.remove('spinning'), 500);
+                        document.documentElement.classList.toggle('dark');
+                        const isDark = document.documentElement.classList.contains('dark');
+                        localStorage.setItem('darkMode', isDark);
+                        this.querySelector('.fa-sun').classList.toggle('hidden');
+                        this.querySelector('.fa-moon').classList.toggle('hidden');
+                    "
+                >
+                    <i class="fas fa-sun"></i>
+                    <i class="fas fa-moon hidden"></i>
+                </button>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-8 mt-12">
+                <div class="text-center mb-8 animate-slide-in">
+                    <h1 class="text-4xl font-bold text-primary-600 dark:text-primary-400 mb-2">Welcome Back</h1>
+                    <p class="text-gray-600 dark:text-gray-400">Please enter your password to continue</p>
+                </div>
+
+                <form id="loginForm" class="space-y-6">
+                    <div class="input-effect">
+                        <input type="password" id="password" class="w-full px-4 py-3 bg-transparent border-0 border-b-2 text-lg focus:ring-0 focus:outline-none" placeholder=" ">
+                        <label for="password" class="text-gray-600 dark:text-gray-400">Password</label>
+                    </div>
+
+                    <button type="submit" id="loginButton" class="w-full py-3 px-4 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors duration-200 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
+                        Sign In
+                    </button>
+                </form>
+
+                <div id="loginStatus" class="mt-4 text-center font-medium animate-fade-in"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-8 text-center text-sm text-gray-600 dark:text-gray-400 mb-8">
+        &copy; 2024 All rights reserved.<br>
+        Visit <a href="https://mohamedmaamir.com" class="text-primary-600 dark:text-primary-400 hover:underline" target="_blank" rel="noopener noreferrer">mohamedmaamir.com</a>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const loginForm = document.getElementById('loginForm');
+            const loginStatus = document.getElementById('loginStatus');
+            const darkModeToggle = document.getElementById('darkModeToggle');
+
+            // Check and set initial dark mode
+            const savedDarkMode = localStorage.getItem('darkMode') === 'true';
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const isDark = savedDarkMode || (!localStorage.getItem('darkMode') && prefersDark);
+            
+            // Set initial state
+            document.documentElement.classList.toggle('dark', isDark);
+            darkModeToggle.querySelector('.fa-sun').classList.toggle('hidden', isDark);
+            darkModeToggle.querySelector('.fa-moon').classList.toggle('hidden', !isDark);
+
+            // Login form submission
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const password = document.getElementById('password').value;
+                
+                try {
+                    const response = await fetch('/api/authenticate', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ password }),
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        loginStatus.textContent = 'Login successful!';
+                        loginStatus.className = 'mt-4 text-center font-medium text-green-600 dark:text-green-400';
+                        localStorage.setItem('isLoggedIn', 'true');
+                        setTimeout(() => {
+                            window.location.href = '/';
+                        }, 1000);
+                    } else {
+                        loginStatus.textContent = 'Incorrect password';
+                        loginStatus.className = 'mt-4 text-center font-medium text-red-600 dark:text-red-400';
+                        document.getElementById('password').value = '';
+                    }
+                } catch (error) {
+                    loginStatus.textContent = 'An error occurred. Please try again.';
+                    loginStatus.className = 'mt-4 text-center font-medium text-red-600 dark:text-red-400';
+                }
+            });
+
+            // Password field animations
+            const passwordInput = document.getElementById('password');
+            passwordInput.addEventListener('focus', () => {
+                passwordInput.parentElement.classList.add('focused');
+            });
+            passwordInput.addEventListener('blur', () => {
+                passwordInput.parentElement.classList.remove('focused');
+            });
+        });
+    </script>
+</body>
+</html>

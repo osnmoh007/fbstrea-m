@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en" class="dark:dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Stream - FBStream Tools</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="css/header.css">
+    <link rel="stylesheet" href="styles.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {"50":"#eff6ff","100":"#dbeafe","200":"#bfdbfe","300":"#93c5fd","400":"#60a5fa","500":"#3b82f6","600":"#2563eb","700":"#1d4ed8","800":"#1e40af","900":"#1e3a8a","950":"#172554"}
+                    }
+                },
+                fontFamily: {
+                    'body': ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'],
+                    'sans': ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji']
+                }
+            }
+        };
+    </script>
+    <style>
+        .pattern {
+            background-color: #ffffff;
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+    </style>
+    <script src="js/header-loader.js"></script>
+</head>
+<body class="pattern min-h-screen flex flex-col text-gray-800 dark:text-gray-200 font-body">
+    <!-- Header will be loaded here -->
+    <div id="header-container"></div>
+
+    <div class="flex-grow flex items-center justify-center p-2 sm:p-4">
+        <div class="container glass rounded-lg p-3 sm:p-6 w-full max-w-2xl mx-auto animate-fade-in">
+            <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-3 sm:p-6 w-full mx-auto form-container">
+                <div class="flex flex-col sm:flex-row justify-between items-center mb-4 sm:mb-6 space-y-2 sm:space-y-0">
+                    <h1 class="text-xl sm:text-2xl font-bold text-primary-600 dark:text-primary-400 text-center sm:text-left">
+                        <i class="fas fa-video mr-2 sm:mr-3"></i>Video Stream Configuration
+                    </h1>
+                    <div class="flex space-x-1.5 justify-center sm:justify-end">
+                        <button id="logsButton" class="inline-flex items-center py-1.5 px-3 border border-transparent rounded-md shadow-sm text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
+                            <i class="fas fa-list-ul mr-1 text-xs"></i>
+                            <span>Logs</span>
+                        </button>
+                    </div>
+                </div>
+                <form id="streamForm" class="space-y-6">
+                    <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 sm:p-6 space-y-4 sm:space-y-6 border border-gray-200 dark:border-gray-700">
+                        <h2 class="text-lg sm:text-xl font-semibold text-primary-600 dark:text-primary-400 mb-2 sm:mb-4">RTMP Server Configuration</h2>
+                        <div class="relative">
+                            <label for="rtmpUrl" class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+                                RTMP URL
+                                <span class="tooltip-container">
+                                    <i class="fas fa-info-circle info-icon"></i>
+                                    <div class="tooltip-card">
+                                        <div class="tooltip-title">RTMP URL</div>
+                                        <div class="tooltip-description">The streaming destination URL where your content will be broadcasted. Choose from preset platforms or enter a custom URL.</div>
+                                    </div>
+                                </span>
+                            </label>
+                            <button type="button" id="rtmpUrlButton" class="btn w-full px-3 py-2 text-left text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent flex items-center justify-between">
+                                <span id="selectedPlatform">Select RTMP URL</span>
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                            <div id="rtmpUrlDropdown" class="hidden absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg">
+                                <div class="py-1">
+                                    <a href="#" class="block px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600" data-value="rtmps://live-api-s.facebook.com:443/rtmp/">
+                                        <i class="fab fa-facebook-square mr-2"></i> Facebook Live
+                                    </a>
+                                    <a href="#" class="block px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600" data-value="rtmps://a.rtmp.youtube.com/live2">
+                                        <i class="fab fa-youtube mr-2"></i> YouTube Live
+                                    </a>
+                                    <a href="#" class="block px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600" data-value="rtmps://live.tiktok.com/rtmp/">
+                                        <i class="fab fa-tiktok mr-2"></i> TikTok Live
+                                    </a>
+                                    <a href="#" class="block px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600" data-value="rtmps://rtmp-global.cloud.vimeo.com:443/live">
+                                        <i class="fab fa-vimeo-v mr-2"></i> Vimeo Live
+                                    </a>
+                                    <a href="#" class="block px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600" data-value="rtmp://live.twitch.tv/app/">
+                                        <i class="fab fa-twitch mr-2"></i> Twitch
+                                    </a>
+                                    <a href="#" class="block px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600" data-value="rtmp://localhost:1935/live/">
+                                        <i class="fas fa-desktop mr-2"></i> Local RTMP
+                                    </a>
+                                    <a href="#" class="block px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600" data-value="manual">
+                                        <i class="fas fa-cog mr-2"></i> Manual Entry
+                                    </a>
+                                </div>
+                            </div>
+                            <input type="hidden" id="rtmpUrl" name="rtmpUrl">
+                        </div>
+                        <div id="manualRtmpUrlContainer" class="hidden">
+                            <label for="manualRtmpUrl" class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Manual RTMP URL</label>
+                            <input type="text" id="manualRtmpUrl" class="w-full px-3 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent" placeholder="Enter your RTMP URL here">
+                        </div>
+                        <div>
+                            <label for="streamKey" class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+                                Stream Key
+                                <span class="tooltip-container">
+                                    <i class="fas fa-info-circle info-icon"></i>
+                                    <div class="tooltip-card">
+                                        <div class="tooltip-title">Stream Key</div>
+                                        <div class="tooltip-description">Your unique stream key for authentication. Keep this private and secure.</div>
+                                    </div>
+                                </span>
+                            </label>
+                            <div class="relative">
+                                <input type="password" id="streamKey" class="w-full px-3 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent" placeholder="Enter your stream key">
+                                <button type="button" id="toggleStreamKey" class="absolute inset-y-0 right-0 px-3 flex items-center">
+                                    <i class="fas fa-eye text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 sm:p-6 space-y-4 sm:space-y-6 border border-gray-200 dark:border-gray-700">
+                        <h2 class="text-lg sm:text-xl font-semibold text-primary-600 dark:text-primary-400 mb-2 sm:mb-4">Stream Source Configuration</h2>
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between">
+                                <label for="useMp4Loop" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Use MP4 Files
+                                    <span class="tooltip-container">
+                                        <i class="fas fa-info-circle info-icon"></i>
+                                        <div class="tooltip-card">
+                                            <div class="tooltip-title">MP4 Files</div>
+                                            <div class="tooltip-description">Stream local MP4 files instead of M3U8 URLs. You can select multiple files to play in sequence.</div>
+                                        </div>
+                                    </span>
+                                </label>
+                                <label class="switch">
+                                    <input type="checkbox" id="useMp4Loop">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+
+                            <div id="mp4Container" class="hidden space-y-4">
+                                <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                                    <div class="mb-4">
+                                        <div id="videoSelect" class="space-y-2 max-h-60 overflow-y-auto divide-y divide-gray-200 dark:divide-gray-600">
+                                            <!-- Video items will be dynamically inserted here -->
+                                        </div>
+                                    </div>
+                                    <div class="flex flex-col sm:flex-row gap-2">
+                                        <button type="button" id="uploadVideoBtn" class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 cursor-pointer transition-colors duration-200">
+                                            <i class="fas fa-upload mr-2"></i>
+                                            Upload MP4
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <label for="useM3uFile" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Use M3U File
+                                <span class="tooltip-container">
+                                    <i class="fas fa-info-circle info-icon"></i>
+                                    <div class="tooltip-card">
+                                        <div class="tooltip-title">Use M3U File</div>
+                                        <div class="tooltip-description">Upload an M3U/M3U8 playlist file containing multiple channels. This allows you to select and stream specific channels from your playlist.</div>
+                                    </div>
+                                </span>
+                            </label>
+                            <label class="switch">
+                                <input type="checkbox" id="useM3uFile">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div id="m3uFileContainer" class="hidden space-y-4">
+                            <div>
+                                <label for="m3uFile" class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Upload M3U File</label>
+                                <input type="file" id="m3uFile" accept=".m3u,.m3u8" class="w-full px-3 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+                            </div>
+                            <div>
+                                <label for="channelSelect" class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Select Channel</label>
+                                <select id="channelSelect" class="w-full px-3 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+                                    <option value="">Select a channel...</option>
+                                </select>
+                                <button type="button" id="testChannel" class="mt-2 w-full px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                                    Test Video
+                                </button>
+                            </div>
+                        </div>
+                        <div id="m3u8UrlContainer" class="block">
+                            <label for="m3u8Url" class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+                                M3U8 URL
+                                <span class="tooltip-container">
+                                    <i class="fas fa-info-circle info-icon"></i>
+                                    <div class="tooltip-card">
+                                        <div class="tooltip-title">M3U8 URL</div>
+                                        <div class="tooltip-description">The source URL of your HLS stream. This is the content that will be restreamed to your destination.</div>
+                                    </div>
+                                </span>
+                            </label>
+                            <input type="text" id="m3u8Url" class="w-full px-3 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent" placeholder="Enter M3U8 URL">
+                            <button type="button" id="testM3u8" class="mt-2 w-full px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                                Test Video
+                            </button>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 sm:p-6 space-y-4 sm:space-y-6 border border-gray-200 dark:border-gray-700">
+                        <h2 class="text-lg sm:text-xl font-semibold text-primary-600 dark:text-primary-400 mb-2 sm:mb-4">Stream Customization</h2>
+                        <div class="flex items-center justify-between">
+                            <label for="enableBlur" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Enable Blur
+                                <span class="tooltip-container">
+                                    <i class="fas fa-info-circle info-icon"></i>
+                                    <div class="tooltip-card">
+                                        <div class="tooltip-title">Enable Blur</div>
+                                        <div class="tooltip-description">Add a blur effect to specific regions of your stream. Perfect for hiding sensitive information or creating visual effects.</div>
+                                    </div>
+                                </span>
+                            </label>
+                            <label class="switch">
+                                <input type="checkbox" id="enableBlur">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div id="blurSettings" class="hidden space-y-4"></div>
+                        <div class="flex items-center justify-between">
+                            <label for="enableZoom" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Enable Zoom
+                                <span class="tooltip-container">
+                                    <i class="fas fa-info-circle info-icon"></i>
+                                    <div class="tooltip-card">
+                                        <div class="tooltip-title">Enable Zoom</div>
+                                        <div class="tooltip-description">Apply digital zoom to your stream. Useful for focusing on specific areas or creating dynamic viewing experiences.</div>
+                                    </div>
+                                </span>
+                            </label>
+                            <label class="switch">
+                                <input type="checkbox" id="enableZoom">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div id="zoomSettings" class="hidden mt-2">
+                            <label for="zoomLevel" class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Zoom Level: <span id="zoomLevelValue">100</span>%</label>
+                            <input type="range" id="zoomLevel" min="0" max="200" value="100" step="1" class="w-full">
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <label for="useMp3Audio" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Use MP3 Audio
+                                <span class="tooltip-container">
+                                    <i class="fas fa-info-circle info-icon"></i>
+                                    <div class="tooltip-card">
+                                        <div class="tooltip-title">Use MP3 Audio</div>
+                                        <div class="tooltip-description">Replace the stream's original audio with custom MP3 audio. Great for adding background music or commentary.</div>
+                                    </div>
+                                </span>
+                            </label>
+                            <label class="switch">
+                                <input type="checkbox" id="useMp3Audio">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <label for="enableLogo" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Enable Logo
+                                <span class="tooltip-container">
+                                    <i class="fas fa-info-circle info-icon"></i>
+                                    <div class="tooltip-card">
+                                        <div class="tooltip-title">Enable Logo</div>
+                                        <div class="tooltip-description">Add your custom logo or watermark to the stream. You can position it in different corners of the video.</div>
+                                    </div>
+                                </span>
+                            </label>
+                            <label class="switch">
+                                <input type="checkbox" id="enableLogo">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div id="logoUploadContainer" class="hidden">
+                            <label for="logoUpload" class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+                                Upload Logo
+                                <span class="tooltip-container">
+                                    <i class="fas fa-info-circle info-icon"></i>
+                                    <div class="tooltip-card">
+                                        <div class="tooltip-title">Upload Logo</div>
+                                        <div class="tooltip-description">Add your custom logo or watermark to the stream. You can position it in different corners of the video.</div>
+                                    </div>
+                                </span>
+                            </label>
+                            <input type="file" id="logoUpload" accept="image/*" class="w-full px-3 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+                            
+                            <!-- Reordered logo position selection -->
+                            <label for="logoPosition" class="block text-sm font-medium mb-1 mt-2 text-gray-700 dark:text-gray-300">
+                                Logo Position
+                                <span class="tooltip-container">
+                                    <i class="fas fa-info-circle info-icon"></i>
+                                    <div class="tooltip-card">
+                                        <div class="tooltip-title">Logo Position</div>
+                                        <div class="tooltip-description">Choose where your logo appears on the stream. Select from top-left, top-right, bottom-left, or bottom-right corners.</div>
+                                    </div>
+                                </span>
+                            </label>
+                            <select id="logoPosition" class="w-full px-3 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+                                <option value="top-right">Top Right</option>
+                                <option value="top-left">Top Left</option>
+                                <option value="bottom-right">Bottom Right</option>
+                                <option value="bottom-left">Bottom Left</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="button" id="streamToggle" class="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors duration-200">
+                        Start Streaming
+                    </button>
+                    <div id="status" class="mt-2 text-center font-medium text-gray-700 dark:text-gray-300"></div>
+                </form>
+                <div class="mt-4 sm:mt-6 space-y-4">
+                    <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 sm:p-6 space-y-4 sm:space-y-6 border border-gray-200 dark:border-gray-700">
+                        <h2 class="text-lg sm:text-xl font-semibold text-primary-600 dark:text-primary-400 mb-2 sm:mb-4">Stream Message</h2>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="streamMessage" class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+                                    Stream Message
+                                    <span class="tooltip-container">
+                                        <i class="fas fa-info-circle info-icon"></i>
+                                        <div class="tooltip-card">
+                                            <div class="tooltip-title">Stream Message</div>
+                                            <div class="tooltip-description">Enter text to display as an overlay on your stream. The message will animate across the screen with your chosen style settings.</div>
+                                        </div>
+                                    </span>
+                                </label>
+                                <div class="flex space-x-2">
+                                    <input type="text" id="streamMessage" class="flex-1 px-3 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent" placeholder="Enter your message here">
+                                </div>
+                            </div>
+                            <div class="flex flex-col sm:flex-row gap-2">
+                                <button id="sendMessage" class="w-full sm:flex-1 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200" disabled>
+                                    <i class="fas fa-paper-plane mr-1"></i>
+                                    Send Message
+                                </button>
+                                <button id="clearMessages" class="w-full sm:flex-1 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200">
+                                    <i class="fas fa-trash-alt mr-1"></i>
+                                    Clear Messages
+                                </button>
+                                <button id="textCustomizeBtn" class="w-full sm:flex-1 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors duration-200">
+                                    <i class="fas fa-paint-brush mr-1"></i>
+                                    Style
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 sm:p-6 space-y-4 sm:space-y-6 border border-gray-200 dark:border-gray-700">
+                        <h2 class="text-lg sm:text-xl font-semibold text-primary-600 dark:text-primary-400 mb-2 sm:mb-4">System Stats</h2>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="text-center p-4 bg-gray-100 dark:bg-gray-700 rounded-lg shadow-sm">
+                                <h3 class="text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">CPU Usage</h3>
+                                <div class="relative pt-1">
+                                    <div class="flex mb-2 items-center justify-between">
+                                        <div class="text-sm font-semibold inline-block text-primary-600 dark:text-primary-400">
+                                            <span id="cpuUsage">0</span>%
+                                        </div>
+                                    </div>
+                                    <div class="overflow-hidden h-2.5 mb-4 text-xs flex rounded-full bg-gray-200 dark:bg-gray-600">
+                                        <div id="cpuBar" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-gradient-to-r from-green-500 to-primary-500 transition-all duration-300 ease-in-out" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-center p-4 bg-gray-100 dark:bg-gray-700 rounded-lg shadow-sm">
+                                <h3 class="text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Memory Usage</h3>
+                                <div class="relative pt-1">
+                                    <div class="flex mb-2 items-center justify-between">
+                                        <div class="text-sm font-semibold inline-block text-primary-600 dark:text-primary-400">
+                                            <span id="memoryUsage">0</span>%
+                                        </div>
+                                    </div>
+                                    <div class="overflow-hidden h-2.5 mb-4 text-xs flex rounded-full bg-gray-200 dark:bg-gray-600">
+                                        <div id="memoryBar" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-gradient-to-r from-blue-500 to-primary-500 transition-all duration-300 ease-in-out" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="output" class="mt-4 p-2 bg-gray-100 dark:bg-gray-700 rounded-md text-sm hidden"></div>
+                <!-- Footer with All Rights Reserved and Website Link -->
+                <footer class="mt-8 text-center text-sm text-gray-600 dark:text-gray-400 mb-8">
+                    &copy; 2024 All rights reserved.<br>
+                    Visit <a href="https://mohamedmaamir.com" class="text-primary-600 dark:text-primary-400 hover:underline" target="_blank" rel="noopener noreferrer">mohamedmaamir.com</a>
+                </footer>
+            </div>
+        </div>
+    </div>
+    <!-- Fixed Position Notifications -->
+<div id="notificationContainer" class="fixed top-4 right-4 z-[100] space-y-2 min-w-[300px] max-w-sm pointer-events-none">
+    <!-- Notifications will be dynamically inserted here -->
+</div>
+    <!-- Video Player Modal -->
+    <div id="videoPlayerModal" class="hidden fixed inset-0 bg-black bg-opacity-75 backdrop-blur-sm overflow-y-auto h-full w-full z-50 flex items-center justify-center">
+        <div class="relative mx-auto p-4 w-11/12 max-w-4xl">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl">
+                <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Test Stream</h3>
+                        <button id="closeVideoModal" class="text-gray-400 hover:text-gray-500 focus:outline-none">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="p-4">
+                    <div class="aspect-video bg-black rounded-lg overflow-hidden">
+                        <video id="videoPlayer" class="w-full h-full" controls>
+                            Your browser does not support the video element.
+                        </video>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logs Modal -->
+    <div id="logsModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border border-gray-200 dark:border-gray-700 w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white dark:bg-gray-800">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Server Logs</h3>
+                <button id="closeLogsModal" class="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="logsContent" class="mt-2 h-96 overflow-y-auto bg-gray-100 dark:bg-gray-700 p-4 rounded-md font-mono text-sm text-gray-800 dark:text-gray-200">
+                <!-- Logs will be inserted here -->
+            </div>
+        </div>
+    </div>
+    <!-- Upload Modal -->
+    <div id="uploadModal" class="upload-modal">
+        <div class="upload-modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Upload Video</h3>
+                <button id="closeUploadModal" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="uploadArea" class="space-y-4">
+                <div class="flex items-center justify-center w-full">
+                    <label for="videoUpload" class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-700 hover:bg-gray-100">
+                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                            <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
+                            <p class="mb-2 text-sm text-gray-500 dark:text-gray-400">Click or drag & drop to upload</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">MP4 files only</p>
+                        </div>
+                        <input type="file" id="videoUpload" accept=".mp4" class="hidden" multiple>
+                    </label>
+                </div>
+            </div>
+            <div id="uploadProgress" class="hidden mt-4">
+                <div class="space-y-2">
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Uploading: <span id="uploadFileName"></span></p>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                        <div id="progressBarFill" class="bg-primary-600 h-2.5 rounded-full" style="width: 0%"></div>
+                    </div>
+                    <p id="uploadStatus" class="text-sm text-gray-600 dark:text-gray-400 text-center"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Text Customization Modal -->
+    <div id="textCustomizeModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Text Customization</h3>
+                <button id="closeTextCustomizeModal" class="text-gray-400 hover:text-gray-500 focus:outline-none">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <!-- Text Color -->
+                <div>
+                    <label for="textColor" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Text Color
+                        <span class="tooltip-container">
+                            <i class="fas fa-info-circle info-icon"></i>
+                            <div class="tooltip-card">
+                                <div class="tooltip-title">Text Color</div>
+                                <div class="tooltip-description">Choose the color for your message text. Use the color picker or enter a hex color code.</div>
+                            </div>
+                        </span>
+                    </label>
+                    <div class="flex items-center space-x-2">
+                        <input type="color" id="textColor" value="#ff0000" class="h-10 w-10 rounded cursor-pointer border-0 bg-transparent p-0">
+                        <input type="text" id="textColorHex" value="#ff0000" class="flex-1 px-3 py-2 text-sm border rounded bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+                    </div>
+                </div>
+                <!-- Background Color -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Background
+                        <span class="tooltip-container">
+                            <i class="fas fa-info-circle info-icon"></i>
+                            <div class="tooltip-card">
+                                <div class="tooltip-title">Background Color</div>
+                                <div class="tooltip-description">Add a background behind your text to make it more readable. Enable/disable the background and customize its color.</div>
+                            </div>
+                        </span>
+                    </label>
+                    <div class="space-y-2">
+                        <div class="flex items-center">
+                            <input type="checkbox" id="enableBackground" class="form-checkbox h-4 w-4 text-primary-600 rounded border-gray-300 focus:ring-primary-500">
+                            <label for="enableBackground" class="ml-2 text-sm text-gray-600 dark:text-gray-400">Enable background</label>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <input type="color" id="backgroundColor" value="#000000" class="h-10 w-10 rounded cursor-pointer border-0 bg-transparent p-0" disabled>
+                            <input type="text" id="backgroundColorHex" value="#000000" class="flex-1 px-3 py-2 text-sm border rounded bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-primary-500 focus:border-transparent" disabled>
+                        </div>
+                    </div>
+                </div>
+                <!-- Font Size -->
+                <div>
+                    <label for="fontSize" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Font Size: <span id="fontSizeValue">70</span>px
+                        <span class="tooltip-container">
+                            <i class="fas fa-info-circle info-icon"></i>
+                            <div class="tooltip-card">
+                                <div class="tooltip-title">Font Size</div>
+                                <div class="tooltip-description">Adjust the size of your message text. Larger sizes are more visible but take up more space.</div>
+                            </div>
+                        </span>
+                    </label>
+                    <input type="range" id="fontSize" min="20" max="200" value="70" class="w-full">
+                </div>
+            </div>
+           <!-- Animation Type -->
+<div>
+    <label for="animationType" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        Animation Type
+        <span class="tooltip-container">
+            <i class="fas fa-info-circle info-icon"></i>
+            <div class="tooltip-card">
+                <div class="tooltip-title">Text Animation</div>
+                <div class="tooltip-description">Choose how your message text will animate on the stream.</div>
+            </div>
+        </span>
+    </label>
+    <select id="animationType" class="w-full px-3 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+        <option value="bounce">Bounce</option>
+        <option value="slide-left">Slide Left</option>
+        <option value="slide-right">Slide Right</option>
+    </select>
+</div> 
+            <div class="mt-6 flex justify-end space-x-3">
+                <button id="resetTextCustomization" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+                    Reset
+                </button>
+                <button id="saveTextCustomization" class="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                    Save
+                </button>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script src="stream.js"></script>
+</body>
+</html>
