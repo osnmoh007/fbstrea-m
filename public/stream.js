@@ -976,20 +976,32 @@ async function updateSystemStats() {
         if (cpuUsage && cpuBar) {
             cpuUsage.textContent = stats.cpu;
             cpuBar.style.width = `${stats.cpu}%`;
+            cpuBar.style.backgroundColor = stats.cpu > 90 ? '#ef4444' : // red for high usage
+                                         stats.cpu > 70 ? '#f59e0b' : // yellow for medium usage
+                                         '#10b981'; // green for low usage
         }
         
         // Update Memory
         const memoryUsage = document.getElementById('memoryUsage');
         const memoryBar = document.getElementById('memoryBar');
         const usedMemory = document.getElementById('usedMemory');
+        const freeMemory = document.getElementById('freeMemory');
         const totalMemory = document.getElementById('totalMemory');
+        const ffmpegMemory = document.getElementById('ffmpegMemory');
         
-        if (memoryUsage && memoryBar && usedMemory && totalMemory) {
-            memoryUsage.textContent = stats.memory;
-            memoryBar.style.width = `${stats.memory}%`;
-            usedMemory.textContent = stats.usedMemory;
-            totalMemory.textContent = stats.totalMemory;
+        if (memoryUsage && memoryBar) {
+            const memPercent = parseFloat(stats.memory);
+            memoryUsage.textContent = memPercent.toFixed(1);
+            memoryBar.style.width = `${memPercent}%`;
+            memoryBar.style.backgroundColor = memPercent > 90 ? '#ef4444' : // red for high usage
+                                            memPercent > 70 ? '#f59e0b' : // yellow for medium usage
+                                            '#10b981'; // green for low usage
         }
+
+        if (usedMemory) usedMemory.textContent = stats.usedMemory;
+        if (freeMemory) freeMemory.textContent = stats.freeMemory;
+        if (totalMemory) totalMemory.textContent = stats.totalMemory;
+        if (ffmpegMemory) ffmpegMemory.textContent = stats.ffmpegMemory;
     } catch (error) {
         console.error('Error updating system stats:', error);
     }

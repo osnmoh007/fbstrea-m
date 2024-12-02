@@ -170,7 +170,7 @@ app.post('/api/start-stream', authenticateUser, async (req, res) => {
             ffmpegArgs.push(
                 '-hide_banner',
                 '-stream_loop', '-1',
-                '-i', path.join(__dirname, 'sound.mp3')
+                '-i', path.join(__dirname, 'media', 'sound.mp3')
             );
         }
 
@@ -643,16 +643,48 @@ app.get('/api/system-stats', authenticateUser, (req, res) => {
 
         if (process.platform === 'darwin') { // macOS
             cpuUsage = getMacCPUUsage();
-            // Use standard memory calculation for macOS
-            const totalMemory = os.totalmem();
-            const freeMemory = os.freemem();
-            const availableMemory = freeMemory;
-            const usedMemory = totalMemory - availableMemory;
-            memoryStats = {
-                total: totalMemory,
-                used: usedMemory,
-                percentage: ((usedMemory / totalMemory) * 100).toFixed(1)
-            };
+            
+            // Get macOS memory info using vm_stat command
+            try {
+                const vmStatOutput = execSync('vm_stat').toString();
+                const pageSize = 4096; // Default page size on macOS
+                
+                // Parse vm_stat output
+                const matches = {
+                    free: vmStatOutput.match(/Pages free:\s+(\d+)/),
+                    active: vmStatOutput.match(/Pages active:\s+(\d+)/),
+                    inactive: vmStatOutput.match(/Pages inactive:\s+(\d+)/),
+                    speculative: vmStatOutput.match(/Pages speculative:\s+(\d+)/),
+                    wired: vmStatOutput.match(/Pages wired down:\s+(\d+)/),
+                    compressed: vmStatOutput.match(/Pages occupied by compressor:\s+(\d+)/)
+                };
+                
+                const stats = {};
+                for (const [key, match] of Object.entries(matches)) {
+                    stats[key] = match ? parseInt(match[1]) * pageSize : 0;
+                }
+                
+                const totalMemory = os.totalmem();
+                const usedMemory = stats.wired + stats.active + stats.inactive + stats.compressed;
+                const freeMemory = stats.free * pageSize;
+                const actualUsed = totalMemory - freeMemory;
+                
+                memoryStats = {
+                    total: totalMemory,
+                    used: actualUsed,
+                    percentage: ((actualUsed / totalMemory) * 100).toFixed(1)
+                };
+            } catch (error) {
+                console.error('Error getting macOS memory stats:', error);
+                // Fallback to basic memory calculation
+                const totalMemory = os.totalmem();
+                const freeMemory = os.freemem();
+                memoryStats = {
+                    total: totalMemory,
+                    used: totalMemory - freeMemory,
+                    percentage: (((totalMemory - freeMemory) / totalMemory) * 100).toFixed(1)
+                };
+            }
         } else { // Linux and other platforms
             // CPU calculation
             const cpus = os.cpus();
@@ -686,12 +718,10 @@ app.get('/api/system-stats', authenticateUser, (req, res) => {
                 // Fallback to standard memory calculation
                 const totalMemory = os.totalmem();
                 const freeMemory = os.freemem();
-                const availableMemory = freeMemory;
-                const usedMemory = totalMemory - availableMemory;
                 memoryStats = {
                     total: totalMemory,
-                    used: usedMemory,
-                    percentage: ((usedMemory / totalMemory) * 100).toFixed(1)
+                    used: totalMemory - freeMemory,
+                    percentage: (((totalMemory - freeMemory) / totalMemory) * 100).toFixed(1)
                 };
             }
         }
@@ -725,7 +755,8 @@ app.get('/api/system-stats', authenticateUser, (req, res) => {
             memory: memoryStats.percentage,
             totalMemory: (memoryStats.total / (1024 * 1024 * 1024)).toFixed(1), // Convert bytes to GB
             usedMemory: (memoryStats.used / (1024 * 1024 * 1024)).toFixed(1),   // Convert bytes to GB
-            ffmpegMemory: (ffmpegMemory / 1024).toFixed(1) // Convert KB to MB
+            freeMemory: ((memoryStats.total - memoryStats.used) / (1024 * 1024 * 1024)).toFixed(1), // Free memory in GB
+            ffmpegMemory: ffmpegMemory ? (ffmpegMemory / 1024).toFixed(1) : '0' // Convert KB to MB
         });
     } catch (error) {
         handleError(error);
@@ -1620,3 +1651,9 @@ app.get('/api/telegram-bot/status', authenticateUser, (req, res) => {
         handleTelegramBotError(res, error, 'checking status of');
     }
 });
+
+// Create necessary directories if they don't exist
+const mediaDir = path.join(__dirname, 'media');
+if (!fs.existsSync(mediaDir)) {
+    fs.mkdirSync(mediaDir, { recursive: true });
+}
