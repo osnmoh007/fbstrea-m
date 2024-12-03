@@ -1,0 +1,60 @@
+# Node.js
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Media and uploads
+/videos/
+/media/
+/uploads/
+*.mp4
+*.mp3
+*.m3u
+*.m3u8
+*.txt
+!package.json
+!package-lock.json
+
+# Logs
+logs/
+*.log
+telegram_bot.log
+
+# System files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Temporary files
+temp/
+tmp/
+*.tmp
+
+# Cookies
+cookies.txt
+data/cookies.txt
+
+# Build files
+dist/
+build/
+.next/
+out/
+
+# Cache
+.cache/
+.npm/
+
+# Test coverage
+coverage/
+
+# Docker volumes
+docker/data/

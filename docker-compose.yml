@@ -1,0 +1,12 @@
+services:
+  fbstream:
+    image: mohfreestyl/fbstream:latest
+    volumes:
+     - /your/path/to/fbstream/video:/usr/src/app/videos
+     - /your/path/to/fbstream/media:/usr/src/app/media # put sound.mp3 in this folder
+    environment:
+      STREAM_PASSWORD: "your_password"
+      TELEGRAM_BOT_TOKEN: "your_telegram_bot_token"
+      ADMIN_USER_ID: "your_telegram_user_id"
+    ports:
+      - "3000:3000"

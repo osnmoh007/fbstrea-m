@@ -1,49 +1,64 @@
-# FBStream - Advanced Streaming Configuration Tool
+# FBStream - Professional Streaming & Media Management Suite
 
-FBStream is a powerful streaming configuration tool that allows you to manage and customize your streaming content across multiple platforms. With its intuitive interface and advanced features, it provides professional-grade streaming capabilities with real-time controls and monitoring.
+FBStream is a comprehensive streaming and media management suite that combines professional streaming capabilities with YouTube downloading and Telegram bot integration. This all-in-one solution provides a secure, feature-rich platform for managing your streaming content and media files.
 
-## Features
+## Core Features
 
-- **Multi-Platform Streaming**
+### 1. Video Streaming
+- **Multi-Platform Support**
   - Facebook Live
   - YouTube Live
   - TikTok Live
   - Vimeo Live
+  - Twitch
   - Custom RTMP endpoints
+  - Local RTMP server
 
-- **Advanced Content Management**
-  - M3U file support
-  - MP4 video loop functionality
-  - Custom video upload capabilities
-  - Playlist management
-
-- **Visual Enhancements**
-  - Dynamic zoom controls
+- **Stream Customization**
+  - Dynamic text overlays with animations (bounce, slide-left, slide-right)
+  - Logo watermark with position control
   - Region-based blur effects
-  - Logo overlay with position customization
-  - Text overlay with animations
-  - Custom audio integration (MP3)
+  - Dynamic zoom controls
+  - Custom MP3 audio integration
+  - Multiple video source support (MP4 loop)
 
-- **Responsive Design**
-  - Mobile-friendly interface
-  - Touch-optimized controls
-  - Adaptive layouts
-  - Cross-device compatibility
+### 2. YouTube Downloader
+- Multiple format support (MP4, MP3)
+- Quality selection (1080p, 720p, 480p, 360p)
+- Audio extraction (320kbps, 256kbps, 128kbps)
+- Subtitle download support
+- Cookie-based authentication for restricted content
+- Integrated media library management
 
-- **Real-Time Monitoring**
-  - CPU usage tracking
-  - Memory utilization
-  - Stream health indicators
-  - Comprehensive logging system
+### 3. Telegram Bot Integration
+- Stream status monitoring
+- Remote stream control
+- Message overlay management
+- Real-time notifications
+- Admin-only access control
 
-## Prerequisites
+### 4. Security Features
+- Password-protected access
+- Session management
+- Secure authentication
+- Dark/Light mode support
+- Mobile-responsive design
 
-- Node.js (v14 or higher)
+## Technical Requirements
+
+### System Requirements
+- Node.js 18 or higher
 - FFmpeg with all codecs
 - Modern web browser
 - Stable internet connection
 
+### For Docker Deployment
+- Docker
+- Docker Compose (optional)
+
 ## Installation
+
+### Standard Installation
 
 1. Clone the repository:
 ```bash
@@ -56,103 +71,154 @@ cd fbstream
 npm install
 ```
 
-3. Configure environment variables:
-```bash
-cp .env.example .env
-# Edit .env with your settings
+3. Edit .env with your settings:
+```env
+STREAM_PASSWORD=your_password
+TELEGRAM_BOT_TOKEN=your_bot_token
+ADMIN_USER_ID=your_telegram_user_id
 ```
 
 4. Start the application:
 ```bash
-npm start
+node server.js
 ```
 
-5. Access the interface:
+### Docker Installation
+
+1. Create a docker-compose.yml file:
+```yaml
+services:
+  fbstream:
+    image: mohfreestyl/fbstream:latest
+    volumes:
+     - /your/path/to/fbstream/video:/usr/src/app/videos
+     - /your/path/to/fbstream/media:/usr/src/app/media # put sound.mp3 in this folder
+    environment:
+      STREAM_PASSWORD: "your_password"
+      TELEGRAM_BOT_TOKEN: "your_telegram_bot_token"
+      ADMIN_USER_ID: "your_telegram_user_id"
+    ports:
+      - "3000:3000"
 ```
-http://localhost:3000
-```
 
-## Configuration
-
-### Stream Settings
-- RTMP URL configuration
-- Stream key management
-- M3U8/HLS stream support
-- Video quality settings
-
-### Content Management
-- Upload and manage MP4 files
-- M3U playlist configuration
-- Custom video loop settings
-- Audio track integration
-
-### Visual Effects
-- Zoom level: 0-200%
-- Blur region selection
-- Logo positioning
-- Text overlay customization
-- Animation parameters
-
-### Mobile Settings
-- Responsive breakpoints
-- Touch-friendly controls
-- Adaptive input fields
-- Optimized viewport settings
-
-## Usage
-
-1. **Initial Setup**
-   - Log in to the application
-   - Configure stream destination
-   - Set up content sources
-
-2. **Content Configuration**
-   - Upload videos or configure streams
-   - Set up visual effects
-   - Configure overlays
-
-3. **Stream Management**
-   - Start/stop streaming
-   - Monitor performance
-   - Adjust settings in real-time
-
-4. **Mobile Access**
-   - Access via mobile browser
-   - Use touch-optimized controls
-   - Monitor stream on-the-go
-
-## Technical Details
-
-### FFmpeg Configuration
+2. Create required directories:
 ```bash
-ffmpeg -i [input] -vf "scale=1920:1080" -c:v libx264 -preset veryfast -b:v 4500k [output]
+mkdir -p /your/path/to/fbstream/{video,media}
 ```
 
-### Mobile Viewport Settings
-```html
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+3. Add your sound.mp3 file (optional):
+```bash
+cp sound.mp3 /your/path/to/fbstream/media/
 ```
+
+4. Start the container:
+```bash
+docker-compose up -d
+```
+
+5. View logs (optional):
+```bash
+docker-compose logs -f
+```
+
+The application will be available at `http://localhost:3000`
+
+Note: Replace `/your/path/to/fbstream` with your desired path for persistent storage of videos and media files.
+
+## Usage Guide
+
+### 1. Video Streaming
+
+#### Stream Setup
+1. Access the streaming interface
+2. Configure RTMP destination
+3. Select input source (M3U8/MP4)
+4. Configure visual enhancements
+5. Start streaming
+
+#### Text Overlay
+- Customize font size
+- Set text color
+- Enable/disable background
+- Choose animation style
+
+#### Visual Effects
+- Position logo watermark
+- Set blur regions
+- Adjust zoom levels
+- Configure MP3 background audio
+
+### 2. YouTube Downloader
+
+#### Download Process
+1. Enter YouTube URL
+2. Select format and quality
+3. Enable/disable subtitles
+4. Configure cookies (if needed)
+5. Start download
+
+#### Media Library
+- View downloaded files
+- Play media
+- Rename files
+- Delete content
+
+### 3. Telegram Bot Control
+
+#### Bot Commands
+- Get streaming status
+- Stop stream
+- Send overlay message
+- Clear overlay message
+
+#### Setup
+1. Create bot via BotFather
+2. Set bot token in environment
+3. Configure admin user ID
+4. Start bot service
+
+## System Monitoring
+
+- Real-time CPU usage
+- Memory utilization
+- FFmpeg process monitoring
+- Stream duration tracking
+- Comprehensive logging system
 
 ## Troubleshooting
 
-- **Stream Issues**
-  - Verify RTMP URL and stream key
-  - Check network connectivity
-  - Monitor system resources
+### Common Issues
+- **Stream Not Starting**: Verify RTMP credentials and server status
+- **Download Fails**: Check YouTube URL and cookie configuration
+- **Bot Unresponsive**: Verify token and admin ID settings
+- **Performance Issues**: Monitor system resources and logs
 
-- **Mobile Display Problems**
-  - Clear browser cache
-  - Check device compatibility
-  - Verify internet connection
+### Logs
+- Server logs: `logs/server.log`
+- Telegram bot logs: `telegram_bot.log`
+- Stream messages: `messages.txt`
+
+## Security Considerations
+
+- Use strong passwords
+- Keep environment variables secure
+- Regularly update dependencies
+- Monitor access logs
+- Use HTTPS in production
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License. See the LICENSE file for details.
 
 ## Support
 
-For support, please open an issue in the GitHub repository or contact the development team.
+For support:
+1. Check the troubleshooting guide
+2. Review server logs
+3. Open an issue on GitHub
+4. Contact development team
 
 ---
 
- 2024 FBStream. All rights reserved.
+© 2024 FBStream. All rights reserved.  
+Visit [mohamedmaamir.com](https://mohamedmaamir.com)
