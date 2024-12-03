@@ -83,47 +83,71 @@ ADMIN_USER_ID=your_telegram_user_id
 node server.js
 ```
 
-### Docker Installation
+### 🐳 Docker Installation
 
-1. Create a docker-compose.yml file:
+1. Edit the `docker-compose.yml` file:
 ```yaml
 services:
   fbstream:
     image: mohfreestyl/fbstream:latest
     volumes:
-     - /your/path/to/fbstream/video:/usr/src/app/videos
-     - /your/path/to/fbstream/media:/usr/src/app/media # put sound.mp3 in this folder
+     - ./videos:/usr/src/app/videos     # 📁 Local video storage
+     - ./media:/usr/src/app/media       # 🎵 Local media storage (for sound.mp3)
     environment:
-      STREAM_PASSWORD: "your_password"
-      TELEGRAM_BOT_TOKEN: "your_telegram_bot_token"
-      ADMIN_USER_ID: "your_telegram_user_id"
+      STREAM_PASSWORD: "your_password"         # 🔑 Your access password
+      TELEGRAM_BOT_TOKEN: "your_bot_token"     # 🤖 Your Telegram bot token
+      ADMIN_USER_ID: "your_telegram_user_id"   # 👤 Your Telegram user ID
     ports:
-      - "3000:3000"
+      - "3000:3000"    # 🌐 Web interface port
 ```
 
 2. Create required directories:
 ```bash
-mkdir -p /your/path/to/fbstream/{video,media}
+# 📂 Create directories for persistent storage
+mkdir -p videos media
 ```
 
-3. Add your sound.mp3 file (optional):
+3. Add your sound file (optional):
 ```bash
-cp sound.mp3 /your/path/to/fbstream/media/
+# 🎵 Copy your background music file
+cp sound.mp3 media/
 ```
 
 4. Start the container:
 ```bash
+# 🚀 Launch in detached mode
 docker-compose up -d
 ```
 
 5. View logs (optional):
 ```bash
+# 📊 Monitor container logs
 docker-compose logs -f
 ```
 
-The application will be available at `http://localhost:3000`
+The application will be available at `http://localhost:3000` 🌐
 
-Note: Replace `/your/path/to/fbstream` with your desired path for persistent storage of videos and media files.
+> 💡 **Tips:**
+> - Keep your environment variables secure
+> - Use strong passwords
+> - Backup your media folders regularly
+> - Check logs for troubleshooting
+
+### 🛠️ Common Docker Commands
+
+```bash
+# 🔄 Restart the container
+docker-compose restart
+
+# ⏹️ Stop the container
+docker-compose down
+
+# 📝 View container status
+docker-compose ps
+
+# 🔍 Check container resources
+docker stats fbstream
+```
 
 ## Usage Guide
 
