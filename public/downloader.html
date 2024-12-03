@@ -104,6 +104,46 @@
                             </label>
                         </div>
 
+                        <!-- Add Cookie Toggle and Upload -->
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between">
+                                <label for="useCookies" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Use Cookies
+                                    <span class="tooltip-container">
+                                        <i class="fas fa-info-circle info-icon"></i>
+                                        <div class="tooltip-card">
+                                            <div class="tooltip-title">Use Cookies</div>
+                                            <div class="tooltip-description">Enable to use cookies.txt file for downloading age-restricted or private videos.</div>
+                                        </div>
+                                    </span>
+                                </label>
+                                <label class="switch">
+                                    <input type="checkbox" id="useCookies">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            
+                            <div id="cookieUploadSection" class="hidden">
+                                <div class="flex items-center space-x-4">
+                                    <div class="flex-grow">
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                            Cookie File
+                                            <span id="cookieStatus" class="ml-2 text-xs"></span>
+                                        </label>
+                                        <div class="flex items-center space-x-2">
+                                            <input type="file" id="cookieFile" accept=".txt" class="hidden">
+                                            <button type="button" id="uploadCookieBtn" class="flex-grow px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors duration-200">
+                                                <i class="fas fa-upload mr-2"></i>Upload cookies.txt
+                                            </button>
+                                            <button type="button" id="deleteCookieBtn" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors duration-200 hidden">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div id="videoInfo" class="hidden bg-gray-100 dark:bg-gray-700 p-4 rounded-md">
                             <h3 class="font-medium mb-2">Video Information</h3>
                             <div class="grid grid-cols-2 gap-4 text-sm">
@@ -130,7 +170,6 @@
                             <button id="downloadBtn" type="submit" class="w-full py-3 px-4 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors duration-200 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
                                 <i class="fas fa-download mr-2"></i>Download
                             </button>
-                            <div id="downloadLink" class="mt-4 text-center"></div>
                         </div>
 
                     </form>

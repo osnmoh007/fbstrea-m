@@ -1027,17 +1027,55 @@ app.post('/api/get-video-info', authenticateUser, async (req, res) => {
     }
 });
 
+// Add cookie file storage path
+const cookieFilePath = path.join(__dirname, 'cookies.txt');
+
+// Add cookie file upload endpoint
+app.post('/api/upload-cookies', authenticateUser, upload.single('cookieFile'), (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: 'No cookie file uploaded' });
+        }
+
+        // Move the uploaded file to the cookies.txt location
+        fs.copyFileSync(req.file.path, cookieFilePath);
+        fs.unlinkSync(req.file.path); // Clean up temp file
+
+        res.json({ success: true, message: 'Cookie file uploaded successfully' });
+    } catch (error) {
+        console.error('Error uploading cookie file:', error);
+        res.status(500).json({ success: false, message: 'Error uploading cookie file' });
+    }
+});
+
+// Add endpoint to check if cookies file exists
+app.get('/api/check-cookies', authenticateUser, (req, res) => {
+    const exists = fs.existsSync(cookieFilePath);
+    res.json({ exists });
+});
+
+// Add endpoint to delete cookies file
+app.post('/api/delete-cookies', authenticateUser, (req, res) => {
+    try {
+        if (fs.existsSync(cookieFilePath)) {
+            fs.unlinkSync(cookieFilePath);
+        }
+        res.json({ success: true, message: 'Cookie file deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting cookie file:', error);
+        res.status(500).json({ success: false, message: 'Error deleting cookie file' });
+    }
+});
+
+// Modify the download process handling in the download endpoint
 app.post('/api/download', authenticateUser, async (req, res) => {
     try {
-        const { url, format = 'mp4-1080', includeSubtitles } = req.body;
-        console.log('Download request:', { url, format, includeSubtitles });
+        const { url, format = 'mp4-1080', includeSubtitles, useCookies } = req.body;
+        console.log('Download request:', { url, format, includeSubtitles, useCookies });
 
         if (!url) {
             return res.status(400).json({ success: false, message: 'URL is required' });
         }
-
-        // Generate a unique download ID
-        const downloadId = Date.now().toString();
 
         // Change downloads directory to videos
         const videosDir = path.join(__dirname, 'videos');
@@ -1047,19 +1085,83 @@ app.post('/api/download', authenticateUser, async (req, res) => {
             fs.mkdirSync(videosDir, { recursive: true });
         }
 
-        // Generate a unique filename
-        const outputTemplate = path.join(videosDir, `%(title)s.%(ext)s`);
+        // Function to get next available filename
+        function getNextAvailableFilename(baseDir, baseName, ext) {
+            let counter = 1;
+            let filename = path.join(baseDir, `${baseName}.${ext}`);
+            
+            // Remove any existing number suffix from baseName
+            baseName = baseName.replace(/\d+$/, '').trim();
+
+            while (fs.existsSync(filename)) {
+                filename = path.join(baseDir, `${baseName}${counter}.${ext}`);
+                counter++;
+            }
+            
+            return filename;
+        }
+
+        // First get video info to get the title
+        let videoTitle = '';
+        try {
+            // Use simpler command to get just the title
+            const titleProcess = spawn('yt-dlp', [
+                '--get-title',
+                '--no-warnings',
+                '--no-playlist',
+                url
+            ]);
+
+            await new Promise((resolve, reject) => {
+                titleProcess.stdout.on('data', (data) => {
+                    videoTitle += data.toString().trim();
+                });
+
+                titleProcess.stderr.on('data', (data) => {
+                    console.error('Title extraction error:', data.toString());
+                });
+
+                titleProcess.on('close', (code) => {
+                    if (code === 0 && videoTitle) {
+                        console.log('Video title:', videoTitle);
+                        resolve();
+                    } else {
+                        reject(new Error('Failed to get video title'));
+                    }
+                });
+            });
+        } catch (error) {
+            console.error('Error getting video title:', error);
+            videoTitle = 'video_' + Date.now(); // Fallback title
+        }
+
+        // Clean the title and get the next available filename
+        const cleanTitle = videoTitle
+            .replace(/[^\w\s-]/g, '') // Remove special characters except spaces and hyphens
+            .replace(/\s+/g, '_')     // Replace spaces with underscores
+            .replace(/-+/g, '-')      // Replace multiple hyphens with single hyphen
+            .toLowerCase()
+            .trim() || 'video';       // Use 'video' if title is empty after cleaning
+
+        const outputFile = getNextAvailableFilename(videosDir, cleanTitle, 'mp4');
+        console.log('Output file will be:', outputFile);
 
         // Prepare download options
         const options = [
             '--no-playlist',
-            '--progress',
-            '--newline',
-            '--print-json',  // Print all information as JSON
-            '-o', outputTemplate
+            '--no-warnings',
+            '--no-check-certificates',
+            '--restrict-filenames',
+            '-o', outputFile
         ];
 
-        // Handle different format types
+        // Add cookies if enabled
+        if (useCookies && fs.existsSync(cookieFilePath)) {
+            console.log('Using cookies file:', cookieFilePath);
+            options.push('--cookies', cookieFilePath);
+        }
+
+        // Add format selection
         if (format.startsWith('mp3')) {
             const bitrate = format.split('-')[1];
             options.push(
@@ -1069,14 +1171,14 @@ app.post('/api/download', authenticateUser, async (req, res) => {
             );
         } else if (format.startsWith('mp4')) {
             const quality = format.split('-')[1];
-            if (quality === '1080p') {
+            if (quality === '1080') {
                 options.push(
-                    '-f', 'bestvideo[height<=1080]+bestaudio/best[height<=1080]',
+                    '-f', 'bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[height<=1080][ext=mp4]/best',
                     '--merge-output-format', 'mp4'
                 );
             } else {
                 options.push(
-                    '-f', `bestvideo[height<=${quality}]+bestaudio/best[height<=${quality}]`,
+                    '-f', `bestvideo[height<=${quality}][ext=mp4]+bestaudio[ext=m4a]/best[height<=${quality}][ext=mp4]/best`,
                     '--merge-output-format', 'mp4'
                 );
             }
@@ -1088,209 +1190,105 @@ app.post('/api/download', authenticateUser, async (req, res) => {
 
         console.log('Download options:', options);
 
-        // Create download state object
-        const downloadState = {
-            progress: 0,
-            status: 'starting',
-            error: null,
-            outputFile: '',
-            clients: new Set(),
-            downloadDir: videosDir,
-            timestamp: Date.now()
-        };
-
-        activeDownloads.set(downloadId, downloadState);
-
         // Start download process
         const download = ytDlp.exec([url, ...options]);
+        let errorOutput = '';
+        let downloadedFilePath = outputFile;
 
-        // Track download stages
-        let isDownloading = false;
-        let isConverting = false;
+        // Create a promise to handle the download
+        await new Promise((resolve, reject) => {
+            download.on('stdout', (output) => {
+                const line = output.toString().trim();
+                if (line) {
+                    console.log('Download output:', line);
+                }
+            });
 
-        download.on('stdout', (output) => {
-            const line = output.toString().trim();
-            console.log('yt-dlp output:', line);  // Log all output
+            download.on('stderr', (error) => {
+                const line = error.toString().trim();
+                if (line) {
+                    console.log('Download error:', line);
+                    errorOutput += line + '\n';
 
-            const state = activeDownloads.get(downloadId);
-            if (!state) return;
-
-            try {
-                // Try to parse JSON output
-                if (line.startsWith('{')) {
-                    const info = JSON.parse(line);
-                    if (info.requested_downloads) {
-                        const download = info.requested_downloads[0];
-                        if (download && download.filepath) {
-                            state.outputFile = download.filepath;
-                            console.log('Found output file from JSON:', state.outputFile);
-                        }
-                    } else if (info.filepath) {
-                        state.outputFile = info.filepath;
-                        console.log('Found output file from JSON:', state.outputFile);
+                    // Check for specific errors
+                    if (line.includes('Sign in to confirm your age') || 
+                        line.includes('Sign in to confirm you\'re not a bot')) {
+                        reject(new Error('This video requires YouTube sign-in. Please enable and upload cookies to download.'));
                     }
                 }
-            } catch (e) {
-                // Not JSON output, continue with normal parsing
-            }
+            });
 
-            // Look for the final output file path in normal output
-            if (line.startsWith('[MovingFiles]')) {
-                console.log('Found MovingFiles line:', line);
-                const filepathMatch = line.match(/Moving file (.+?) to (.+)/);
-                if (filepathMatch) {
-                    state.outputFile = filepathMatch[2];
-                    console.log('Set output file from MovingFiles:', state.outputFile);
-                }
-            } else if (line.startsWith('[download]') && line.includes('Destination:')) {
-                console.log('Found Destination line:', line);
-                const filepathMatch = line.match(/Destination:\s+(.+)/);
-                if (filepathMatch) {
-                    state.outputFile = filepathMatch[1];
-                    console.log('Set output file from Destination:', state.outputFile);
-                }
-            }
-
-            // Parse download progress
-            const progressMatch = line.match(/\[download\]\s+(\d+\.?\d*)%/);
-            if (progressMatch && isDownloading) {
-                const progress = parseFloat(progressMatch[1]);
-                state.progress = progress;
-
-                // Notify all clients
-                const message = JSON.stringify({ 
-                    type: 'progress', 
-                    percentage: progress, 
-                    status: 'Downloading video' 
-                });
-                state.clients.forEach(client => {
-                    safeWrite(client, `data: ${message}\n\n`);
-                });
-            }
-
-            // Detect conversion start
-            if (line.includes('[Merger] Merging formats')) {
-                isDownloading = false;
-                isConverting = true;
-                const message = JSON.stringify({ 
-                    type: 'progress', 
-                    percentage: 90, 
-                    status: 'Merging video formats' 
-                });
-                state.clients.forEach(client => {
-                    safeWrite(client, `data: ${message}\n\n`);
-                });
-            }
-        });
-
-        download.on('close', () => {
-            const state = activeDownloads.get(downloadId);
-            if (state) {
-                console.log('Download process closed. Current state:', {
-                    outputFile: state.outputFile,
-                    exists: state.outputFile ? fs.existsSync(state.outputFile) : false,
-                    downloadDir: state.downloadDir
-                });
-
-                // If we still don't have the output file, try to find it in the videos directory
-                if (!state.outputFile || !fs.existsSync(state.outputFile)) {
+            download.on('close', async (code) => {
+                console.log('Download process closed with code:', code);
+                
+                if (code === 0) {
                     try {
-                        // Get the most recently created file in the videos directory
-                        const files = fs.readdirSync(videosDir)
-                            .filter(file => !file.startsWith('.'))
-                            .map(file => ({
-                                name: file,
-                                path: path.join(videosDir, file),
-                                ctime: fs.statSync(path.join(videosDir, file)).ctime
-                            }))
-                            .sort((a, b) => b.ctime - a.ctime);
+                        // Wait for file system
+                        await new Promise(resolve => setTimeout(resolve, 2000));
 
-                        if (files.length > 0) {
-                            const newestFile = files[0];
-                            // Only use this file if it was created in the last minute
-                            if (Date.now() - newestFile.ctime < 60000) {
-                                state.outputFile = newestFile.path;
-                                console.log('Found recent output file:', state.outputFile);
-                            }
+                        if (fs.existsSync(downloadedFilePath)) {
+                            // Update file modification time to now
+                            const now = new Date();
+                            fs.utimesSync(downloadedFilePath, now, now);
+                            
+                            console.log('Download successful! File saved:', downloadedFilePath);
+                            resolve({
+                                name: path.basename(downloadedFilePath),
+                                path: downloadedFilePath,
+                                mtime: now,
+                                showDownloadButton: false
+                            });
+                        } else {
+                            reject(new Error('Download completed but file not found'));
                         }
                     } catch (error) {
-                        console.error('Error finding output file:', error);
+                        console.error('Error accessing file:', error);
+                        reject(new Error('Error accessing downloaded file: ' + error.message));
                     }
-                }
-
-                // Only proceed if we have a valid output file
-                if (state.outputFile && fs.existsSync(state.outputFile)) {
-                    const filename = path.basename(state.outputFile);
-                    // Set the file's modification time to the current time
-                    const currentTime = new Date();
-                    fs.utimesSync(state.outputFile, currentTime, currentTime);
-                    console.log('Download completed successfully:', {
-                        filename,
-                        path: state.outputFile,
-                        modifiedTime: currentTime
-                    });
-                    const message = JSON.stringify({ 
-                        type: 'complete', 
-                        filename, 
-                        status: 'Download complete' 
-                    });
-                    state.clients.forEach(client => {
-                        safeWrite(client, `data: ${message}\n\n`);
-                        try {
-                            client.end();
-                        } catch (error) {
-                            console.error('Error ending client connection:', error);
-                        }
-                    });
                 } else {
-                    console.error('Download completed but output file not found or invalid');
-                    const message = JSON.stringify({ 
-                        type: 'error', 
-                        message: 'Output file not found or invalid',
-                        status: 'Download failed' 
-                    });
-                    state.clients.forEach(client => {
-                        safeWrite(client, `data: ${message}\n\n`);
-                        try {
-                            client.end();
-                        } catch (error) {
-                            console.error('Error ending client connection:', error);
+                    let errorMessage = 'Download failed';
+                    
+                    if (errorOutput.includes('ERROR:')) {
+                        const match = errorOutput.match(/ERROR:\s*(.*?)(?:\n|$)/);
+                        if (match) {
+                            errorMessage = match[1].trim();
                         }
-                    });
-                }
-            }
-        });
-
-        download.on('error', (error) => {
-            console.error('Download error:', error);
-            const state = activeDownloads.get(downloadId);
-            if (state) {
-                state.error = error.message;
-                state.status = 'error';
-                const message = JSON.stringify({ 
-                    type: 'error', 
-                    message: error.message,
-                    status: 'Download failed' 
-                });
-                state.clients.forEach(client => {
-                    safeWrite(client, `data: ${message}\n\n`);
-                    try {
-                        client.end();
-                    } catch (error) {
-                        console.error('Error ending client connection:', error);
+                    } else if (errorOutput.trim()) {
+                        errorMessage = errorOutput.split('\n')[0].trim();
                     }
-                });
-            }
-        });
 
-        res.json({
-            success: true,
-            downloadId: downloadId
+                    console.error('Download failed:', errorMessage);
+                    reject(new Error(errorMessage));
+                }
+            });
+
+            download.on('error', (error) => {
+                console.error('Download process error:', error);
+                reject(new Error('Download process error: ' + error.message));
+            });
+        }).then((downloadedFile) => {
+            const response = {
+                success: true,
+                filename: downloadedFile.name,
+                title: path.basename(downloadedFile.name, '.mp4'),
+                showDownloadButton: false
+            };
+            console.log('Download completed successfully:', response);
+            res.json(response);
+        }).catch((error) => {
+            console.error('Download error:', error);
+            res.status(500).json({
+                success: false,
+                message: error.message
+            });
         });
 
     } catch (error) {
-        console.error('Error starting download:', error);
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Download error:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Download failed'
+        });
     }
 });
 

@@ -237,11 +237,163 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    const progressBar = document.getElementById('progressBar');
-    const progressPercent = document.getElementById('progressPercent');
-    const downloadProgress = document.getElementById('downloadProgress');
-    const downloadLink = document.getElementById('downloadLink');
-    let eventSource = null;
+    // Add cookie toggle and upload handling
+    const useCookiesToggle = document.getElementById('useCookies');
+    const cookieUploadSection = document.getElementById('cookieUploadSection');
+    const cookieFileInput = document.getElementById('cookieFile');
+    const uploadCookieBtn = document.getElementById('uploadCookieBtn');
+    const deleteCookieBtn = document.getElementById('deleteCookieBtn');
+    const cookieStatus = document.getElementById('cookieStatus');
+
+    // Check if cookies file exists on load
+    checkCookieStatus();
+
+    // Toggle cookie upload section visibility
+    useCookiesToggle.addEventListener('change', () => {
+        cookieUploadSection.classList.toggle('hidden', !useCookiesToggle.checked);
+        if (useCookiesToggle.checked) {
+            checkCookieStatus();
+        }
+    });
+
+    // Handle cookie file upload button click
+    uploadCookieBtn.addEventListener('click', () => {
+        cookieFileInput.click();
+    });
+
+    // Handle cookie file selection
+    cookieFileInput.addEventListener('change', async (e) => {
+        if (e.target.files.length > 0) {
+            const file = e.target.files[0];
+            if (file.name.endsWith('.txt')) {
+                const formData = new FormData();
+                formData.append('cookieFile', file);
+
+                try {
+                    const response = await fetch('/api/upload-cookies', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+                    if (result.success) {
+                        showNotification('Cookie file uploaded successfully', 'success');
+                        checkCookieStatus();
+                    } else {
+                        throw new Error(result.message);
+                    }
+                } catch (error) {
+                    console.error('Error uploading cookie file:', error);
+                    showNotification('Error uploading cookie file', 'error');
+                }
+            } else {
+                showNotification('Please select a valid .txt file', 'error');
+            }
+            e.target.value = ''; // Reset file input
+        }
+    });
+
+    // Handle cookie file deletion
+    deleteCookieBtn.addEventListener('click', async () => {
+        try {
+            const response = await fetch('/api/delete-cookies', {
+                method: 'POST'
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                showNotification('Cookie file deleted successfully', 'success');
+                checkCookieStatus();
+            } else {
+                throw new Error(result.message);
+            }
+        } catch (error) {
+            console.error('Error deleting cookie file:', error);
+            showNotification('Error deleting cookie file', 'error');
+        }
+    });
+
+    // Function to check cookie file status
+    async function checkCookieStatus() {
+        try {
+            const response = await fetch('/api/check-cookies');
+            const result = await response.json();
+            
+            if (result.exists) {
+                cookieStatus.textContent = '(Cookie file uploaded)';
+                cookieStatus.classList.add('text-green-600', 'dark:text-green-400');
+                deleteCookieBtn.classList.remove('hidden');
+                uploadCookieBtn.innerHTML = '<i class="fas fa-upload mr-2"></i>Replace cookies.txt';
+            } else {
+                cookieStatus.textContent = '(No cookie file)';
+                cookieStatus.classList.remove('text-green-600', 'dark:text-green-400');
+                deleteCookieBtn.classList.add('hidden');
+                uploadCookieBtn.innerHTML = '<i class="fas fa-upload mr-2"></i>Upload cookies.txt';
+            }
+        } catch (error) {
+            console.error('Error checking cookie status:', error);
+        }
+    }
+
+    // Modify the form submission to handle downloads without progress
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const url = document.getElementById('youtubeUrl').value;
+        const format = document.getElementById('format').value;
+        const includeSubtitles = document.getElementById('subtitles').checked;
+        const useCookies = document.getElementById('useCookies').checked;
+        const downloadButton = document.getElementById('downloadBtn');
+        const messageContainer = document.getElementById('downloadMessage');
+
+        if (!url) {
+            showNotification('Please enter a YouTube URL', 'error');
+            return;
+        }
+
+        try {
+            // Update UI to show downloading state
+            downloadButton.disabled = true;
+            downloadButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Downloading...';
+            messageContainer.textContent = 'Downloading video...';
+            messageContainer.className = 'text-blue-500';
+
+            const response = await fetch('/api/download', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    url,
+                    format,
+                    includeSubtitles,
+                    useCookies
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Show success message
+                messageContainer.textContent = 'Download Complete!';
+                messageContainer.className = 'text-green-500';
+
+                // Refresh media library
+                refreshMediaLibrary();
+            } else {
+                throw new Error(result.message);
+            }
+        } catch (error) {
+            console.error('Download error:', error);
+            messageContainer.textContent = `Download Error: ${error.message}`;
+            messageContainer.className = 'text-red-500';
+            showNotification(`Download Error: ${error.message}`, 'error');
+        } finally {
+            // Reset download button
+            downloadButton.disabled = false;
+            downloadButton.innerHTML = '<i class="fas fa-download mr-2"></i>Download';
+        }
+    });
 
     // Handle logout
     const logoutButton = document.getElementById('logoutButton');
@@ -267,181 +419,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-
-    // Handle form submission
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        // Get download button
-        const downloadButton = document.getElementById('downloadBtn');
-        const messageContainer = document.getElementById('downloadMessage');
-        
-        // Disable download button and update its text
-        if (downloadButton) {
-            downloadButton.disabled = true;
-            downloadButton.textContent = 'Downloading...';
-        }
-        
-        // Clear any previous messages
-        if (messageContainer) {
-            messageContainer.textContent = '';
-            messageContainer.classList.remove('text-green-500', 'text-red-500');
-        }
-        
-        // Get form values
-        const urlInput = document.getElementById('youtubeUrl');
-        const formatSelect = document.getElementById('format');
-        const subtitlesCheckbox = document.getElementById('subtitles');
-
-        // Validate inputs
-        if (!urlInput || !formatSelect) {
-            showNotification('Download form elements not found', 'error');
-            return;
-        }
-
-        const url = urlInput.value.trim();
-        const format = formatSelect.value;
-        const includeSubtitles = subtitlesCheckbox ? subtitlesCheckbox.checked : false;
-
-        // Validate URL
-        if (!url) {
-            showNotification('Please enter a YouTube URL', 'error');
-            urlInput.focus();
-            return;
-        }
-
-        // Basic URL validation
-        const urlPattern = /^(https?\:\/\/)?(www\.youtube\.com|youtu\.?be)\/.+$/;
-        if (!urlPattern.test(url)) {
-            showNotification('Please enter a valid YouTube URL', 'error');
-            urlInput.focus();
-            return;
-        }
-
-        const formData = {
-            url: url,
-            format: format,
-            includeSubtitles: includeSubtitles
-        };
-
-        try {
-            const response = await fetch('/api/download', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(formData)
-            });
-
-            if (response.status === 401) {
-                window.location.href = '/login.html';
-                return;
-            }
-
-            if (!response.ok) {
-                // Handle non-200 responses
-                const errorText = await response.text();
-                throw new Error(errorText || 'Download failed');
-            }
-
-            const data = await response.json();
-
-            // Setup EventSource for progress tracking
-            eventSource = new EventSource(`/api/download-progress/${data.downloadId}`);
-            
-            eventSource.onmessage = (event) => {
-                try {
-                    const data = JSON.parse(event.data);
-                    console.log('Progress update:', data);
-                    
-                    if (data.type === 'complete') {
-                        eventSource.close();
-                        
-                        // Show success message
-                        if (messageContainer) {
-                            messageContainer.textContent = 'Download Complete!';
-                            messageContainer.classList.add('text-green-500');
-                        }
-                        
-                        // Re-enable download button
-                        if (downloadButton) {
-                            downloadButton.disabled = false;
-                            downloadButton.textContent = 'Download';
-                        }
-                        
-                        // Create download button
-                        const downloadLink = document.getElementById('downloadLink');
-                        if (downloadLink) {
-                            const downloadBtn = document.createElement('a');
-                            downloadBtn.href = `/api/media/download/${encodeURIComponent(data.filename)}`;
-                            //downloadBtn.textContent = 'Download Video';
-                           // downloadBtn.className = 'inline-block px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700';
-                            
-                            downloadLink.innerHTML = '';
-                            downloadLink.appendChild(downloadBtn);
-                            downloadLink.style.display = 'block';
-                        }
-                    } else if (data.type === 'error') {
-                        eventSource.close();
-                        
-                        // Show error message
-                        if (messageContainer) {
-                            messageContainer.textContent = `Download Error: ${data.message}`;
-                            messageContainer.classList.add('text-red-500');
-                        }
-                        
-                        // Re-enable download button
-                        if (downloadButton) {
-                            downloadButton.disabled = false;
-                            downloadButton.textContent = 'Download';
-                        }
-                        
-                        showNotification(`Download Error: ${data.message}`, 'error');
-                    }
-                } catch (parseError) {
-                    console.error('Error parsing progress event:', parseError);
-                    showNotification('Error processing download progress', 'error');
-                }
-            };
-
-            eventSource.onerror = (error) => {
-                console.error('EventSource error:', error);
-                
-                // Show error message
-                if (messageContainer) {
-                    messageContainer.textContent = 'Download connection lost';
-                    messageContainer.classList.add('text-red-500');
-                }
-                
-                // Re-enable download button
-                if (downloadButton) {
-                    downloadButton.disabled = false;
-                    downloadButton.textContent = 'Download';
-                }
-                
-                eventSource.close();
-                showNotification('Download connection lost', 'error');
-            };
-
-        } catch (error) {
-            console.error('Download error:', error);
-            
-            // Show error message
-            if (messageContainer) {
-                messageContainer.textContent = `Download Error: ${error.message}`;
-                messageContainer.classList.add('text-red-500');
-            }
-            
-            // Re-enable download button
-            const downloadButton = document.getElementById('downloadBtn');
-            if (downloadButton) {
-                downloadButton.disabled = false;
-                downloadButton.textContent = 'Download';
-            }
-            
-            showNotification(`Download Error: ${error.message}`, 'error');
-        }
-    });
 
     refreshMediaLibrary();
 });
