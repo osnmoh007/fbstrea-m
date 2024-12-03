@@ -9,8 +9,10 @@ RUN apt-get update && apt-get install -y \
     curl \
     ffmpeg \
     htop \
-    nodejs \
     software-properties-common \
+    && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+    && apt-get update \
+    && apt-get install -y nodejs \
     && add-apt-repository ppa:tomtomtom/yt-dlp \
     && apt-get update \
     && apt-get install -y yt-dlp \
