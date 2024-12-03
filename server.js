@@ -776,8 +776,9 @@ app.post('/api/upload-logo', authenticateUser, upload.single('logo'), (req, res)
         const logoFileName = `logo_${Date.now()}${extension}`;
         const logoPath = path.join(__dirname, 'uploads', logoFileName);
 
-        // Move the uploaded file to the uploads directory
-        fs.renameSync(req.file.path, logoPath);
+        // Move the uploaded file to the uploads directory using copy instead of rename
+        fs.copyFileSync(req.file.path, logoPath);
+        fs.unlinkSync(req.file.path);
 
         res.json({
             success: true,
@@ -947,7 +948,8 @@ app.post('/api/upload-video', authenticateUser, upload.single('video'), (req, re
         // Move file to videos directory
         const fileExt = path.extname(req.file.originalname);
         const finalPath = path.join(videosDir, req.file.originalname);
-        fs.renameSync(req.file.path, finalPath);
+        fs.copyFileSync(req.file.path, finalPath);
+        fs.unlinkSync(req.file.path);
 
         res.json({
             success: true,
