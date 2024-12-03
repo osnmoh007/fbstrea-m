@@ -227,6 +227,12 @@ async function renameFile() {
     }
 }
 
+// Add cookie toggle functionality
+document.getElementById('useBrowserCookies').addEventListener('change', function(e) {
+    const browserSelect = document.getElementById('browserSelect');
+    browserSelect.style.display = e.target.checked ? 'block' : 'none';
+});
+
 document.addEventListener('DOMContentLoaded', () => {
     // Check authentication first
     checkAuth();
