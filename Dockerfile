@@ -1,5 +1,5 @@
 # Use the official Node.js image
-FROM node:14
+FROM node:18-bullseye
 
 # Install FFmpeg and other required packages
 RUN apt-get update && apt-get install -y \
