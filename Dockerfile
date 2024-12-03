@@ -1,22 +1,16 @@
-# Use Ubuntu-based Node.js image
-FROM ubuntu:22.04
+# Use the official Node.js image
+FROM node:14
 
-# Avoid prompts from apt
-ENV DEBIAN_FRONTEND=noninteractive
-
-# Install Node.js, ffmpeg, htop, and yt-dlp
+# Install FFmpeg and other required packages
 RUN apt-get update && apt-get install -y \
-    curl \
     ffmpeg \
+    curl \
     htop \
-    software-properties-common \
-    && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
-    && apt-get update \
-    && apt-get install -y nodejs \
-    && add-apt-repository ppa:tomtomtom/yt-dlp \
-    && apt-get update \
-    && apt-get install -y yt-dlp \
     && rm -rf /var/lib/apt/lists/*
+
+# Install yt-dlp using curl
+RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp && \
+    chmod a+rx /usr/local/bin/yt-dlp
 
 # Set the working directory
 WORKDIR /usr/src/app
@@ -33,7 +27,6 @@ COPY . .
 # Telegram token
 #ENV TELEGRAM_BOT_TOKEN=your_bot_token
 #ENV ADMIN_USER_ID=your_admin_user_id
-
 # Expose the port the app runs on
 EXPOSE 3000
 
