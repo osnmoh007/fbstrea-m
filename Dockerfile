@@ -5,14 +5,15 @@ FROM ubuntu:22.04
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Install Node.js, ffmpeg, htop, and yt-dlp
-RUN add-apt-repository ppa:tomtomtom/yt-dlp && \
-    apt-get update && apt-get install -y \
-    software-properties-common \
+RUN apt-get update && apt-get install -y \
     curl \
     ffmpeg \
     htop \
-    nodejs \ 
-    yt-dlp \
+    nodejs \
+    software-properties-common \
+    && add-apt-repository ppa:tomtomtom/yt-dlp \
+    && apt-get update \
+    && apt-get install -y yt-dlp \
     && rm -rf /var/lib/apt/lists/*
 
 # Set the working directory
