@@ -1027,19 +1027,35 @@ app.post('/api/get-video-info', authenticateUser, async (req, res) => {
     }
 });
 
-// Add cookie file storage path
-const cookieFilePath = path.join(__dirname, 'cookies.txt');
+// Add cookie file storage path with proper permissions
+const cookieFilePath = path.join(__dirname, 'data', 'cookies.txt');
+const cookieDirPath = path.dirname(cookieFilePath);
 
-// Add cookie file upload endpoint
+// Ensure data directory exists with proper permissions
+if (!fs.existsSync(cookieDirPath)) {
+    fs.mkdirSync(cookieDirPath, { recursive: true, mode: 0o777 });
+}
+
+// Add cookie file upload endpoint with proper permissions
 app.post('/api/upload-cookies', authenticateUser, upload.single('cookieFile'), (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ success: false, message: 'No cookie file uploaded' });
         }
 
-        // Move the uploaded file to the cookies.txt location
+        // Ensure target directory exists
+        if (!fs.existsSync(cookieDirPath)) {
+            fs.mkdirSync(cookieDirPath, { recursive: true, mode: 0o777 });
+        }
+
+        // Copy file with proper permissions
         fs.copyFileSync(req.file.path, cookieFilePath);
+        fs.chmodSync(cookieFilePath, 0o666); // Make file readable/writable
         fs.unlinkSync(req.file.path); // Clean up temp file
+
+        console.log('Cookie file uploaded to:', cookieFilePath);
+        console.log('Cookie file exists:', fs.existsSync(cookieFilePath));
+        console.log('Cookie file permissions:', fs.statSync(cookieFilePath).mode.toString(8));
 
         res.json({ success: true, message: 'Cookie file uploaded successfully' });
     } catch (error) {
@@ -1105,12 +1121,22 @@ app.post('/api/download', authenticateUser, async (req, res) => {
         let videoTitle = '';
         try {
             // Use simpler command to get just the title
-            const titleProcess = spawn('yt-dlp', [
+            const titleOptions = [
                 '--get-title',
                 '--no-warnings',
-                '--no-playlist',
-                url
-            ]);
+                '--no-playlist'
+            ];
+
+            // Add cookies if enabled
+            if (useCookies && fs.existsSync(cookieFilePath)) {
+                console.log('Using cookies file for title extraction:', cookieFilePath);
+                console.log('Cookie file exists:', fs.existsSync(cookieFilePath));
+                console.log('Cookie file permissions:', fs.statSync(cookieFilePath).mode.toString(8));
+                console.log('Cookie file contents:', fs.readFileSync(cookieFilePath, 'utf8').slice(0, 100) + '...');
+                titleOptions.push('--cookies', cookieFilePath);
+            }
+
+            const titleProcess = spawn('yt-dlp', [...titleOptions, url]);
 
             await new Promise((resolve, reject) => {
                 titleProcess.stdout.on('data', (data) => {
@@ -1118,7 +1144,15 @@ app.post('/api/download', authenticateUser, async (req, res) => {
                 });
 
                 titleProcess.stderr.on('data', (data) => {
-                    console.error('Title extraction error:', data.toString());
+                    const error = data.toString();
+                    console.error('Title extraction error:', error);
+                    if (error.includes('Sign in to confirm')) {
+                        console.log('Cookie status:', {
+                            exists: fs.existsSync(cookieFilePath),
+                            size: fs.existsSync(cookieFilePath) ? fs.statSync(cookieFilePath).size : 0,
+                            permissions: fs.existsSync(cookieFilePath) ? fs.statSync(cookieFilePath).mode.toString(8) : null
+                        });
+                    }
                 });
 
                 titleProcess.on('close', (code) => {
@@ -1657,3 +1691,4 @@ const mediaDir = path.join(__dirname, 'media');
 if (!fs.existsSync(mediaDir)) {
     fs.mkdirSync(mediaDir, { recursive: true });
 }
+
