@@ -1027,8 +1027,8 @@ app.post('/api/get-video-info', authenticateUser, async (req, res) => {
 
 app.post('/api/download', authenticateUser, async (req, res) => {
     try {
-        const { url, format = 'mp4-1080', includeSubtitles, useBrowserCookies, browserSelect } = req.body;
-        console.log('Download request:', { url, format, includeSubtitles, useBrowserCookies, browserSelect });
+        const { url, format = 'mp4-1080', includeSubtitles } = req.body;
+        console.log('Download request:', { url, format, includeSubtitles });
 
         if (!url) {
             return res.status(400).json({ success: false, message: 'URL is required' });
@@ -1082,11 +1082,6 @@ app.post('/api/download', authenticateUser, async (req, res) => {
 
         if (includeSubtitles) {
             options.push('--write-sub', '--sub-lang', 'en');
-        }
-
-        // Add cookie extraction if enabled
-        if (useBrowserCookies && browserSelect) {
-            options.push('--cookies-from-browser', browserSelect);
         }
 
         console.log('Download options:', options);
@@ -1661,28 +1656,4 @@ app.get('/api/telegram-bot/status', authenticateUser, (req, res) => {
 const mediaDir = path.join(__dirname, 'media');
 if (!fs.existsSync(mediaDir)) {
     fs.mkdirSync(mediaDir, { recursive: true });
-}
-
-// Function to get cookie file path for browser
-function getBrowserCookiePath(browser) {
-    const homeDir = os.homedir();
-    switch(browser) {
-        case 'chrome':
-            if (process.platform === 'darwin') { // macOS
-                return path.join(homeDir, 'Library/Application Support/Google/Chrome/Default/Cookies');
-            }
-            // Add other OS paths as needed
-            break;
-        case 'firefox':
-            if (process.platform === 'darwin') { // macOS
-                return path.join(homeDir, 'Library/Application Support/Firefox/Profiles');
-            }
-            break;
-        case 'safari':
-            if (process.platform === 'darwin') { // macOS
-                return path.join(homeDir, 'Library/Safari');
-            }
-            break;
-    }
-    return null;
 }
